@@ -5,9 +5,14 @@ import subprocess
 from sys import modules
 from typing import List, Tuple, Type, Dict
 
-from kokoro import KPipeline
-from IPython.display import display, Audio
-import soundfile as sf
+try:
+    from kokoro import KPipeline
+    from IPython.display import display, Audio
+    import soundfile as sf
+    AUDIO_AVAILABLE = True
+except ImportError:
+    AUDIO_AVAILABLE = False
+    print("Audio packages not available. Text-to-speech functionality disabled.")
 
 if __name__ == "__main__":
     from utility import pretty_print, animate_thinking
@@ -33,8 +38,11 @@ class Speech():
         }
         self.pipeline = None
         self.language = language
-        if enable:
+        if enable and AUDIO_AVAILABLE:
             self.pipeline = KPipeline(lang_code=self.lang_map[language])
+        elif enable and not AUDIO_AVAILABLE:
+            print("Warning: Audio packages not available, text-to-speech disabled")
+            self.pipeline = None
         self.voice = self.voice_map[language][voice_idx]
         self.speed = 1.2
         self.voice_folder = ".voices"
@@ -57,7 +65,8 @@ class Speech():
             sentence (str): The text to convert to speech. Will be pre-processed.
             voice_idx (int, optional): Index of the voice to use from the voice map.
         """
-        if not self.pipeline:
+        if not self.pipeline or not AUDIO_AVAILABLE:
+            print("Text-to-speech not available")
             return
         if voice_idx >= len(self.voice_map[self.language]):
             pretty_print("Invalid voice number, using default voice", color="error")
@@ -70,9 +79,10 @@ class Speech():
             speed=self.speed, split_pattern=r'\n+'
         )
         for i, (_, _, audio) in enumerate(generator):
-            if 'ipykernel' in modules: #only display in jupyter notebook.
+            if 'ipykernel' in modules and AUDIO_AVAILABLE: #only display in jupyter notebook.
                 display(Audio(data=audio, rate=24000, autoplay=i==0), display_id=False)
-            sf.write(audio_file, audio, 24000) # save each audio file
+            if AUDIO_AVAILABLE:
+                sf.write(audio_file, audio, 24000) # save each audio file
             if platform.system().lower() == "windows":
                 import winsound
                 winsound.PlaySound(audio_file, winsound.SND_FILENAME)

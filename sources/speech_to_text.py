@@ -6,8 +6,13 @@ import numpy as np
 import torch
 import time
 from transformers import AutoModelForSpeechSeq2Seq, AutoProcessor, pipeline
-import librosa
-import pyaudio
+try:
+    import librosa
+    import pyaudio
+    AUDIO_AVAILABLE = True
+except ImportError:
+    AUDIO_AVAILABLE = False
+    print("Audio packages not available. Speech-to-text functionality disabled.")
 
 audio_queue = queue.Queue()
 done = False
@@ -16,8 +21,11 @@ class AudioRecorder:
     """
     AudioRecorder is a class that records audio from the microphone and adds it to the audio queue.
     """
-    def __init__(self, format: int = pyaudio.paInt16, channels: int = 1, rate: int = 4096, chunk: int = 8192, record_seconds: int = 5, verbose: bool = False):
-        self.format = format
+    def __init__(self, format: int = None, channels: int = 1, rate: int = 4096, chunk: int = 8192, record_seconds: int = 5, verbose: bool = False):
+        if not AUDIO_AVAILABLE:
+            raise ImportError("Audio packages not available. Cannot initialize AudioRecorder.")
+        
+        self.format = format if format is not None else pyaudio.paInt16
         self.channels = channels
         self.rate = rate
         self.chunk = chunk
@@ -113,7 +121,10 @@ class Transcript:
         if len(audio_data.shape) > 1:
             audio_data = np.mean(audio_data, axis=1)
         if sample_rate != 16000:
-            audio_data = librosa.resample(audio_data, orig_sr=sample_rate, target_sr=16000)
+            if AUDIO_AVAILABLE:
+                audio_data = librosa.resample(audio_data, orig_sr=sample_rate, target_sr=16000)
+            else:
+                print("Warning: librosa not available, cannot resample audio")
         result = self.pipe(audio_data)
         return self.remove_hallucinations(result["text"])
     
