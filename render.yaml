@@ -22,6 +22,7 @@ services:
     name: agentic-seek-redis
     plan: starter
     maxmemoryPolicy: allkeys-lru
+    ipAllowList: []  # Empty array allows access from all Render services
 
   # Frontend Static Site
   - type: web
