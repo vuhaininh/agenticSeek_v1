@@ -23,15 +23,20 @@ from sources.logger import Logger
 from sources.schemas import QueryRequest, QueryResponse
 
 
-from celery import Celery
-
 api = FastAPI(title="AgenticSeek API", version="0.1.0")
 
-# Get Redis URL from environment or use default
-redis_url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
-celery_app = Celery("tasks", broker=redis_url, backend=redis_url)
-celery_app.conf.update(task_track_started=True)
-logger = Logger("backend.log")
+# Initialize Celery only if Redis is available
+celery_app = None
+try:
+    from celery import Celery
+    redis_url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+    celery_app = Celery("tasks", broker=redis_url, backend=redis_url)
+    celery_app.conf.update(task_track_started=True)
+    logger = Logger("backend.log")
+    logger.info(f"Celery initialized with Redis: {redis_url}")
+except Exception as e:
+    logger = Logger("backend.log")
+    logger.warning(f"Celery/Redis not available: {e}. Running without background tasks.")
 
 # Load config based on environment
 config = configparser.ConfigParser()
