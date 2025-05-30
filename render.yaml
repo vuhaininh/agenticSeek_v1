@@ -1,0 +1,37 @@
+services:
+  # Backend API Service
+  - type: web
+    name: agentic-seek-backend
+    env: docker
+    dockerfilePath: ./Dockerfile.production
+    plan: starter
+    healthCheckPath: /health
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: OPENAI_API_KEY
+        sync: false  # Set this manually in Render dashboard
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: agentic-seek-redis
+          property: connectionString
+
+  # Redis Service
+  - type: redis
+    name: agentic-seek-redis
+    plan: starter
+    maxmemoryPolicy: allkeys-lru
+
+  # Frontend Static Site
+  - type: web
+    name: agentic-seek-frontend
+    env: static
+    buildCommand: cd frontend/agentic-seek-front && npm install && npm run build
+    staticPublishPath: frontend/agentic-seek-front/build
+    envVars:
+      - key: REACT_APP_BACKEND_URL
+        fromService:
+          type: web
+          name: agentic-seek-backend
+          property: host

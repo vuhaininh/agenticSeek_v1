@@ -26,15 +26,24 @@ from sources.schemas import QueryRequest, QueryResponse
 from celery import Celery
 
 api = FastAPI(title="AgenticSeek API", version="0.1.0")
-celery_app = Celery("tasks", broker="redis://localhost:6379/0", backend="redis://localhost:6379/0")
+
+# Get Redis URL from environment or use default
+redis_url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+celery_app = Celery("tasks", broker=redis_url, backend=redis_url)
 celery_app.conf.update(task_track_started=True)
 logger = Logger("backend.log")
+
+# Load config based on environment
 config = configparser.ConfigParser()
-config.read('config.ini')
+config_file = 'config.production.ini' if os.getenv('ENVIRONMENT') == 'production' else 'config.ini'
+config.read(config_file)
+
+# Configure CORS for production
+allowed_origins = ["*"] if os.getenv('ENVIRONMENT') == 'production' else ["http://localhost", "http://localhost:3000"]
 
 api.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost", "http://localhost:3000"],
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -105,6 +114,16 @@ def initialize_system():
 interaction = initialize_system()
 is_generating = False
 query_resp_history = []
+
+@api.get("/health")
+async def health_check():
+    """Health check endpoint for monitoring"""
+    return {
+        "status": "healthy",
+        "environment": os.getenv('ENVIRONMENT', 'development'),
+        "provider": config.get('MAIN', 'provider_name'),
+        "model": config.get('MAIN', 'provider_model')
+    }
 
 @api.get("/screenshot")
 async def get_screenshot():
