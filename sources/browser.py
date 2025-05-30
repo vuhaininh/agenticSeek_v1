@@ -42,7 +42,11 @@ def get_chrome_path() -> str:
         paths = ["/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
                  "/Applications/Google Chrome Beta.app/Contents/MacOS/Google Chrome Beta"]
     else:  # Linux
-        paths = ["/usr/bin/google-chrome", "/usr/bin/chromium-browser", "/usr/bin/chromium", "/opt/chrome/chrome", "/usr/local/bin/chrome"]
+        # Prioritize chromium in production environment
+        if os.getenv('ENVIRONMENT') == 'production':
+            paths = ["/usr/bin/chromium", "/usr/bin/chromium-browser", "/usr/bin/google-chrome", "/opt/chrome/chrome", "/usr/local/bin/chrome"]
+        else:
+            paths = ["/usr/bin/google-chrome", "/usr/bin/chromium-browser", "/usr/bin/chromium", "/opt/chrome/chrome", "/usr/local/bin/chrome"]
 
     for path in paths:
         if os.path.exists(path) and os.access(path, os.X_OK):
