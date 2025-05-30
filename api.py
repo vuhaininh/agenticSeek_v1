@@ -142,10 +142,7 @@ async def get_screenshot():
         content={"error": "No screenshot available"}
     )
 
-@api.get("/health")
-async def health_check():
-    logger.info("Health check endpoint called")
-    return {"status": "healthy", "version": "0.1.0"}
+
 
 @api.get("/is_active")
 async def is_active():
@@ -271,4 +268,5 @@ async def process_query(request: QueryRequest):
             interaction.save_session()
 
 if __name__ == "__main__":
-    uvicorn.run(api, host="0.0.0.0", port=8000)
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run(api, host="0.0.0.0", port=port)

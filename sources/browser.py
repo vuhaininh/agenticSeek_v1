@@ -141,6 +141,21 @@ def create_driver(headless=False, stealth_mode=True, crx_path="./crx/nopecha.crx
     chrome_options.add_argument("--disable-features=SitePerProcess,IsolateOrigins")
     chrome_options.add_argument("--enable-features=NetworkService,NetworkServiceInProcess")
     chrome_options.add_argument("--disable-blink-features=AutomationControlled")
+    
+    # Memory optimization for production
+    if os.getenv('ENVIRONMENT') == 'production':
+        chrome_options.add_argument("--memory-pressure-off")
+        chrome_options.add_argument("--max_old_space_size=256")
+        chrome_options.add_argument("--disable-background-timer-throttling")
+        chrome_options.add_argument("--disable-renderer-backgrounding")
+        chrome_options.add_argument("--disable-backgrounding-occluded-windows")
+        chrome_options.add_argument("--disable-features=TranslateUI")
+        chrome_options.add_argument("--disable-ipc-flooding-protection")
+        chrome_options.add_argument("--disable-extensions")
+        chrome_options.add_argument("--disable-plugins")
+        chrome_options.add_argument("--disable-images")
+        # Reduce window size for memory
+        width, height = (800, 600)
     chrome_options.add_argument(f'user-agent={user_agent["ua"]}')
     chrome_options.add_argument(f'--window-size={width},{height}')
     if not stealth_mode:
